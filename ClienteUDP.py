@@ -146,18 +146,14 @@ def start_client():
     server_address = (host, port)
     
     try:
-        # Reducido el tiempo de espera a 2 segundos en lugar de 10
         cliente.settimeout(2)
 
         cliente.sendto(f"ALIAS:{alias}".encode('utf-8'), server_address)
         conectado = True
 
-        # No esperamos respuesta del servidor obligatoriamente
         try:
             datos, _ = cliente.recvfrom(1024)
-            # Podríamos procesar la respuesta aquí si es necesario
         except socket.timeout:
-            # Si hay timeout simplemente continuamos
             pass
         except Exception as e:
             print(f"{Fore.YELLOW}[AVISO] No se recibió confirmación pero continuando...{Style.RESET_ALL}")
