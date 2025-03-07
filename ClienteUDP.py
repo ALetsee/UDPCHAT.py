@@ -76,24 +76,21 @@ def enviar_latido():
     global conectado, cliente, server_address, alias
     while conectado:
         try:
-            # Verificamos que el cliente aún exista antes de intentar enviar
+        
             if cliente and conectado:
                 cliente.sendto(f"PING:{alias}".encode('utf-8'), server_address)
-            time.sleep(5)  # Envía un ping cada 5 segundos
+            time.sleep(5)
         except Exception as e:
             if conectado:
                 print(f"\r{Fore.RED}[ERROR] Error al enviar latido: {e}{Style.RESET_ALL}")
-            # No cortamos el bucle para que siga intentando
         except:
-            # Captura cualquier otra excepción
             pass
 
 def recibir_mensajes():
     global conectado, cliente, alias, color_usuario
     while conectado:
         try:
-            # Configuramos un timeout más largo para evitar desconexiones falsas
-            cliente.settimeout(30)  # 30 segundos
+            cliente.settimeout(30)  
             datos, _ = cliente.recvfrom(1024)
             mensaje = datos.decode('utf-8')
             
@@ -105,17 +102,14 @@ def recibir_mensajes():
                 conectado = False
                 break
                 
-            # CORRECCIÓN: Primero imprimimos una nueva línea para limpiar la línea de entrada actual
-            sys.stdout.write("\r" + " " * 80 + "\r")  # Limpiar la línea actual
+            sys.stdout.write("\r" + " " * 80 + "\r")
             sys.stdout.write(f"{mensaje}\n")
             sys.stdout.flush()
             
-            # Luego mostramos de nuevo el prompt de chat
             sys.stdout.write(f"{color_usuario}{alias} > {Style.RESET_ALL}")
             sys.stdout.flush()
             
         except socket.timeout:
-            # Solo enviamos un nuevo ping si hay timeout, sin mensajes de error
             try:
                 if conectado and cliente:
                     cliente.sendto(f"PING:{alias}".encode('utf-8'), server_address)
@@ -125,7 +119,6 @@ def recibir_mensajes():
         except Exception as e:
             if conectado:
                 print(f"\r{Fore.RED}[ERROR] Problema al recibir: {e}{Style.RESET_ALL}")
-                # Intentamos reconectar antes de abandonar
                 try:
                     if conectado and cliente:
                         cliente.sendto(f"PING:{alias}".encode('utf-8'), server_address)
@@ -133,10 +126,9 @@ def recibir_mensajes():
                     pass
             else:
                 break
-    
-    # Solo limpiamos pantalla si realmente nos desconectamos por completo
+
     if not conectado:
-        time.sleep(1)  # Esperar un poco antes de limpiar
+        time.sleep(1)  
         limpiar_pantalla()
 
 def start_client():
@@ -150,28 +142,27 @@ def start_client():
 
     color_usuario = _menu_colores()
     
-    # Crear socket UDP
     cliente = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     server_address = (host, port)
     
     try:
-        # Configuramos un timeout para operaciones de socket
-        cliente.settimeout(10)
-        
-        # Enviar mensaje inicial de registro
+        # Reducido el tiempo de espera a 2 segundos en lugar de 10
+        cliente.settimeout(2)
+
         cliente.sendto(f"ALIAS:{alias}".encode('utf-8'), server_address)
         conectado = True
-        
-        # Limpiar cualquier respuesta que llegue sin procesar
+
+        # No esperamos respuesta del servidor obligatoriamente
         try:
-            cliente.recvfrom(1024)
-        except:
+            datos, _ = cliente.recvfrom(1024)
+            # Podríamos procesar la respuesta aquí si es necesario
+        except socket.timeout:
+            # Si hay timeout simplemente continuamos
             pass
-            
-        # Reiniciar el timeout para las operaciones normales
-        cliente.settimeout(None)
+        except Exception as e:
+            print(f"{Fore.YELLOW}[AVISO] No se recibió confirmación pero continuando...{Style.RESET_ALL}")
         
-        # Creamos dos hilos: uno para recibir y otro para mantener la conexión
+        cliente.settimeout(None)
         hilo_recepcion = threading.Thread(target=recibir_mensajes)
         hilo_recepcion.daemon = True
         hilo_recepcion.start()
@@ -179,8 +170,6 @@ def start_client():
         hilo_latido = threading.Thread(target=enviar_latido)
         hilo_latido.daemon = True
         hilo_latido.start()
-
-        # CORRECCIÓN: Primero mostramos el UI, luego enviamos JOIN
         print(f"{Fore.BLUE}╔══════════════════════════════════════╗{Style.RESET_ALL}")
         print(f"{Fore.BLUE}║                  CHAT                ║{Style.RESET_ALL}")
         print(f"{Fore.BLUE}╚══════════════════════════════════════╝{Style.RESET_ALL}")
@@ -188,31 +177,26 @@ def start_client():
         print(f"{Fore.BLUE}[CONECTADO] Welcome, {color_usuario}{alias}{Style.RESET_ALL}!")
         print(f"{Fore.BLUE}[INFO] Escribe 'exit' o 'salir' para salir.{Style.RESET_ALL}")
         
-        # Ahora enviamos los mensajes JOIN con un pequeño delay
-        time.sleep(0.5)  # Pequeña pausa para asegurar que la interfaz se muestre primero
+        time.sleep(0.5) 
         
-        # Repetimos 3 veces el mensaje inicial para minimizar pérdidas (UDP no garantiza entrega)
         for _ in range(3):
             cliente.sendto(f"JOIN:{alias}".encode('utf-8'), server_address)
-            time.sleep(0.2)  # Tiempo entre intentos
-        
-        # Bucle principal de mensajes
+            time.sleep(0.2) 
+
         while conectado:
             try:
                 mensaje = input(f"{color_usuario}{alias} > {Style.RESET_ALL}")
-                if not conectado:  # Por si se desconectó mientras esperábamos input
+                if not conectado: 
                     break
                     
                 if mensaje.lower() in ["exit", "salir"]:
                     cliente.sendto(f"EXIT:{alias}".encode('utf-8'), server_address)
-                    # Repetimos el mensaje de salida para minimizar pérdidas
                     for _ in range(3):
                         cliente.sendto(f"EXIT:{alias}".encode('utf-8'), server_address)
                         time.sleep(0.1)
                     conectado = False
                     break
                 
-                # Solo enviar si hay mensaje y estamos conectados
                 if mensaje.strip() and conectado:
                     cliente.sendto(f"MSG:{alias}: {mensaje}".encode('utf-8'), server_address)
             except Exception as e:
@@ -238,5 +222,5 @@ if __name__ == "__main__":
         start_client()
     except KeyboardInterrupt:
         print(f"\n{Fore.RED}[CANCELED] Programa terminado.{Style.RESET_ALL}")
-        conectado = False  # Asegurar que los hilos terminen
+        conectado = False 
         sys.exit(0)
