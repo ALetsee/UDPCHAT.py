@@ -1,3 +1,17 @@
+# Clonar el repositorio
+
+Para clonar el repositorio de `UDPCHAT.py`, abre una terminal y ejecuta el siguiente comando:
+
+  ```
+- git clone https://github.com/ALetsee/UDPCHAT.py
+- cd ChatUDP
+- python3 o python ServidorUDP.py primero
+- python3 o python ClienteUDP.py segundo
+
+  ```
+
+
+
 # Funcionamiento del Sistema de Chat UDP
 
 ## Descripción General
