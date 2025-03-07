@@ -84,3 +84,5 @@ Si sigues teniendo problemas de conexión, verifica:
 El sistema está diseñado para ser robusto, manejando desconexiones inesperadas y manteniendo a los usuarios informados sobre quién entra y sale del chat.
 
 Resultados:
+
+https://github.com/user-attachments/assets/e4beae1b-b5c3-43b3-92d5-1c23e68697d9
